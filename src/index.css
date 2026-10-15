@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-  --font-serif: "DM Serif Display", "Iowan Old Style", Palatino, "Palatino Linotype", serif;
-  --font-sans: "DM Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-serif: "Young Serif", "Iowan Old Style", Palatino, "Palatino Linotype", serif;
+  --font-sans: "Instrument Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-inter: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-hand: "Caveat", "Segoe Script", cursive;
   --color-bg: #141414;
   --color-bg-2: #1d1d1d;
@@ -102,6 +103,30 @@ button {
   border-color: #a6847c;
 }
 
+.paper-field {
+  width: 100%;
+  border: 1px solid #d5d7da;
+  border-radius: 12px;
+  background: #fff;
+  color: #181d27;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-inter);
+  font-size: 16px;
+  line-height: 1.5;
+  color-scheme: light;
+  box-shadow: 0 1px 1px rgba(10, 13, 18, 0.05);
+  resize: none;
+}
+
+.paper-field::placeholder {
+  color: #717680;
+}
+
+.paper-field:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(245, 242, 237, 0.45);
+}
+
 .field-error {
   margin-top: 0.35rem;
   color: #d7b2aa;
@@ -128,12 +153,13 @@ button {
 
 .btn-primary {
   border: 1px solid #f5f2ed;
-  background: #1a1a1a;
-  color: #f5f2ed;
+  background: #f5f2ed;
+  color: #141414;
+  font-weight: 600;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #2a2a2a;
+  background: #fff;
 }
 
 .btn-secondary {

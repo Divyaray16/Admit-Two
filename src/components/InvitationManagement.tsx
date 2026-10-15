@@ -7,7 +7,8 @@ import { findRegistryEntry, readRegistry, rememberInvitation, type RegistryEntry
 import { getManagedInvitation } from "../lib/repository";
 import type { Invitation, RsvpStatus } from "../types";
 import { usePageTitle } from "../hooks/usePageTitle";
-import { AppShell, ModeChip, TicketFooter } from "./SiteChrome";
+import { visibleSender } from "../lib/format";
+import { AppShell } from "./SiteChrome";
 
 type Row = {
   entry: RegistryEntry;
@@ -94,19 +95,15 @@ export function InvitationManagement() {
   };
 
   return (
-    <AppShell
-      width="narrow"
-      eyebrow={<ModeChip />}
-      descriptor="Only invitations created in this browser, or opened with a private sender key."
-    >
+    <AppShell width="narrow">
       <h1 className="font-serif text-5xl leading-none text-[#F5F2ED]">Responses.</h1>
       <p className="mt-4 max-w-md text-[#AAA9A6]">See who answered. A public invitation link never opens this page.</p>
       <div className="mt-6 flex gap-4">
         <button type="button" className="btn btn-secondary" onClick={() => void load()}>
           Refresh
         </button>
-        <Link to="/" className="btn btn-quiet">
-          Create an invitation
+        <Link to="/create" className="btn btn-quiet">
+          Create your ticket
         </Link>
       </div>
 
@@ -152,7 +149,6 @@ export function InvitationManagement() {
           </li>
         ))}
       </ul>
-      <TicketFooter />
     </AppShell>
   );
 }
@@ -194,7 +190,7 @@ function ManagedCard({ invitation }: { invitation: Invitation }) {
         </div>
         <div>
           <dt className="text-[11px] tracking-[0.14em] text-[#6F6E6B] uppercase">From</dt>
-          <dd className="mt-1 text-[#F5F2ED]">{invitation.senderName}</dd>
+          <dd className="mt-1 text-[#F5F2ED]">{visibleSender(invitation.senderName) ?? "Not signed"}</dd>
         </div>
       </dl>
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">

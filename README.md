@@ -41,10 +41,10 @@ If the storage policy fails in the SQL editor, create a public bucket named `inv
 
 ## Try the journey
 
-1. Open the app and write an invitation. The ticket on the right is the same component the recipient sees. Until you edit, it shows the sample: Ira, movie night, Sep 3, 2026, 8:00 PM.
-2. Choose **Record a voice message**. Allow the microphone, speak, then stop. Play it back, re-record, or remove it. There is no file upload. Ninety seconds is the limit. You can also send a text-only invitation.
-3. Create the invitation. Copy the link, or use the device share sheet when the browser offers it.
-4. Open `/i/…`. Tap the triangle on the ticket stub. The ticket lifts, straightens, and expands above the reply buttons, and the recording plays. Pause, seek, replay, or close it.
+1. Open the app and choose **Create your ticket**. The home page cycles sample tickets from Divya Ray. On the create page, pick a color and type, then fill in the title, date, time, and note.
+2. Choose **Tap to record**. Allow the microphone, speak, then stop. Play it back or re-record. There is no file upload. You can also send a ticket without a voice note.
+3. Choose **Get my shareable link**. Copy the link. In demo mode it only opens in this browser.
+4. Open the recipient preview. If there is a voice note, tap the stub. It tears off at the perforation, drops below the ticket, and the play control on that stub plays the recording. Then RSVP.
 5. Accept, or decline and confirm. The reply is saved.
 6. Open **Responses** to see the status and the time they answered.
 

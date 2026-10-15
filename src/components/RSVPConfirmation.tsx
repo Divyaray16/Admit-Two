@@ -9,7 +9,7 @@ export function RSVPConfirmation({ status, senderName }: RSVPConfirmationProps) 
   const accepted = status === "accepted";
   return (
     <div className="mx-auto max-w-md text-center" role="status">
-      <h2 className="font-serif text-4xl leading-none text-[#F5F2ED] md:text-5xl">
+      <h2 className="font-serif text-3xl leading-none text-[#F5F2ED]">
         {accepted ? "Looks like it's a yes." : "We'll let them know."}
       </h2>
       <p className="mt-4 text-[#AAA9A6]">

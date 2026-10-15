@@ -1,0 +1,9 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 266.387 194.381" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Subtract">
+<mask id="path-1-inside-1_0_10" fill="white">
+<path d="M266.387 0V194.381H0V0H266.387Z"/>
+</mask>
+<path d="M266.387 0V194.381H0V0H266.387Z" fill="var(--fill-0, #DADDE2)"/>
+<path d="M266.387 0H266.741V-0.354709H266.387V0ZM266.387 194.381V194.736H266.741V194.381H266.387ZM0 194.381H-0.354709V194.736H0V194.381ZM0 0V-0.354709H-0.354709V0H0ZM266.387 0H266.032V194.381H266.387H266.741V0H266.387ZM266.387 194.381V194.026H0V194.381V194.736H266.387V194.381ZM0 194.381H0.354709V0H0H-0.354709V194.381H0ZM0 0V0.354709H266.387V0V-0.354709H0V0Z" fill="var(--stroke-0, black)" mask="url(#path-1-inside-1_0_10)"/>
+</g>
+</svg>

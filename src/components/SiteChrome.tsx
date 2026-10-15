@@ -17,45 +17,82 @@ export function ModeChip() {
   );
 }
 
-type AppShellProps = {
+function BackIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M19 12H5M12 5l-7 7 7 7" />
+    </svg>
+  );
+}
+
+type PageFrameProps = {
   children: ReactNode;
-  eyebrow?: ReactNode;
-  descriptor?: string;
-  width?: "wide" | "narrow";
+  backHref?: string;
+  onBack?: () => void;
+  right?: ReactNode;
 };
 
-export function AppShell({ children, eyebrow, descriptor, width = "wide" }: AppShellProps) {
+export function PageFrame({ children, backHref, onBack, right }: PageFrameProps) {
   return (
-    <div className="min-h-dvh bg-[#141414] text-[#F5F2ED]">
+    <div className="flex min-h-dvh flex-col bg-[#141414] text-[#F5F2ED]">
       <a
         href="#content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:bg-[#F5F2ED] focus:px-3 focus:py-2 focus:text-[#141414]"
       >
         Skip to content
       </a>
-      <div className={`mx-auto min-w-0 overflow-x-clip px-5 py-6 md:px-8 md:py-8 ${width === "wide" ? "max-w-6xl" : "max-w-3xl"}`}>
-        <header className="flex items-start justify-between gap-4">
-          <div>
-            <Link to="/" className="font-serif text-[1.55rem] leading-none tracking-tight text-[#F5F2ED]">
-              AdmitTwo
+      <header className="border-b border-[#2a2a2a] bg-[#141414]">
+        <div className="relative flex h-16 items-center justify-center px-4">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="absolute left-4 flex items-center gap-1 font-sans text-sm text-[#F5F2ED]"
+            >
+              <BackIcon />
+              Back
+            </button>
+          ) : backHref ? (
+            <Link to={backHref} className="absolute left-4 flex items-center gap-1 font-sans text-sm text-[#F5F2ED]">
+              <BackIcon />
+              Back
             </Link>
-            {descriptor ? <p className="mt-2 text-sm text-[#AAA9A6]">{descriptor}</p> : null}
-          </div>
-          {eyebrow ? <div className="pt-1">{eyebrow}</div> : null}
-        </header>
-        <main id="content" className="mt-10 md:mt-14">
-          {children}
-        </main>
+          ) : null}
+          <Link to="/" className="font-serif text-xl leading-6 font-normal text-[#F5F2ED]">
+            admit two
+          </Link>
+          {right ? <div className="absolute right-4">{right}</div> : null}
+        </div>
+      </header>
+      <div id="content" className="flex flex-1 flex-col">
+        {children}
       </div>
+      <CreditFooter />
     </div>
   );
 }
 
-export function TicketFooter() {
+export function CreditFooter() {
   return (
-    <footer className="mt-16 pb-6 text-center">
-      <p className="font-sans text-[11px] tracking-[0.22em] text-[#6E6D6A]">ADMITTWO TICKETS CORP.</p>
-      <p className="mt-2 text-sm text-[#6E6D6A]">Simply beautiful invites for your private circles.</p>
+    <footer className="fixed right-0 bottom-0 left-0 z-50 border-t border-[#2a2a2a] bg-[#141414]">
+      <div className="flex h-10 items-center justify-center px-4">
+        <p className="text-center font-sans text-xs font-normal text-[#F5F2ED]">Designed &amp; built by Divya Ray</p>
+      </div>
     </footer>
+  );
+}
+
+type AppShellProps = {
+  children: ReactNode;
+  width?: "wide" | "narrow";
+};
+
+export function AppShell({ children, width = "narrow" }: AppShellProps) {
+  return (
+    <PageFrame right={<ModeChip />}>
+      <main className={`mx-auto w-full flex-1 px-5 pt-8 pb-24 ${width === "wide" ? "max-w-3xl" : "max-w-lg"}`}>
+        {children}
+      </main>
+    </PageFrame>
   );
 }

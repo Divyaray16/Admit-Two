@@ -1,5 +1,6 @@
-import type { Invitation, InvitationDraft, RsvpStatus } from "../types";
+import type { Invitation, InvitationDraft, RsvpStatus, TicketColor, TicketForm } from "../types";
 import { emptyToNull } from "./format";
+import { asTicketColor, asTicketForm } from "./ticketStyle";
 
 type DemoRecord = {
   publicId: string;
@@ -12,6 +13,8 @@ type DemoRecord = {
   location: string | null;
   message: string;
   note: string | null;
+  ticketColor?: TicketColor;
+  ticketForm?: TicketForm;
   audioDuration: number | null;
   hasAudio: boolean;
   rsvpStatus: RsvpStatus;
@@ -94,6 +97,8 @@ async function toInvitation(record: DemoRecord): Promise<Invitation> {
     location: record.location,
     message: record.message,
     note: record.note,
+    ticketColor: asTicketColor(record.ticketColor),
+    ticketForm: asTicketForm(record.ticketForm),
     audioUrl: await audioUrl(record.publicId, record.hasAudio),
     audioDuration: record.audioDuration,
     rsvpStatus: record.rsvpStatus,
@@ -120,6 +125,8 @@ export async function demoCreate(
     location: emptyToNull(draft.location),
     message: draft.message.trim(),
     note: emptyToNull(draft.note),
+    ticketColor: draft.ticketColor,
+    ticketForm: draft.ticketForm,
     audioDuration: draft.audio ? draft.audio.duration : null,
     hasAudio: Boolean(draft.audio),
     rsvpStatus: "pending",

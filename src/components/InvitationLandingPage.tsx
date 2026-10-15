@@ -1,60 +1,63 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useTicketAudio } from "../hooks/useTicketAudio";
+import { useAudioPlayer } from "../hooks/useAudioPlayer";
+import { usePageTitle } from "../hooks/usePageTitle";
 import { usePublicInvitation } from "../hooks/usePublicInvitation";
-import { formatEventDate, formatEventTime } from "../lib/format";
+import { visibleSender } from "../lib/format";
+import { clearEditing } from "../lib/draftSession";
 import { respondToInvitation } from "../lib/repository";
 import type { Invitation } from "../types";
 import { Dialog } from "./Dialog";
 import { RSVPConfirmation } from "./RSVPConfirmation";
 import { RSVPControls } from "./RSVPControls";
-import { usePageTitle } from "../hooks/usePageTitle";
-import { AppShell, TicketFooter } from "./SiteChrome";
-import { Ticket } from "./Ticket";
+import { PageFrame } from "./SiteChrome";
+import { ScaledBox } from "./ScaledBox";
+import { TicketStack } from "./TicketStack";
+
+const STAGE_W = 396.807;
 
 export function InvitationLandingPage() {
   const { publicId = "" } = useParams();
   const { status, invitation, message, reload } = usePublicInvitation(publicId);
-  usePageTitle(invitation ? `${invitation.senderName} invited you · AdmitTwo` : "AdmitTwo");
+  usePageTitle(invitation ? `${visibleSender(invitation.senderName) ?? "Someone"} invited you · Admit Two` : "Admit Two");
 
   return (
-    <AppShell
-      width="narrow"
-      eyebrow={
-        <span className="rounded-full border border-[#4A4A4A] px-3 py-1 text-[10px] tracking-[0.18em] text-[#F5F2ED]">
-          INVITATION
-        </span>
-      }
-    >
-      {status === "loading" ? <TicketSkeleton /> : null}
-      {status === "missing" ? (
-        <MissingInvite detail="This ticket can’t be found. Check the link, or ask the sender to share it again." />
-      ) : null}
-      {status === "error" ? (
-        <MissingInvite detail={message ?? "The invitation couldn’t be opened."} onRetry={reload} />
-      ) : null}
-      {status === "ready" && invitation ? <ReadyInvite key={invitation.publicId} invitation={invitation} /> : null}
-      <TicketFooter />
-      {invitation?.mode === "demo" ? (
-        <p className="pb-8 text-center text-xs text-[#6E6D6A]">Preview stored on this browser. This link is not public.</p>
-      ) : null}
-    </AppShell>
+    <PageFrame>
+      <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center gap-8 px-5 pt-8 pb-24">
+        {status === "loading" ? <div className="mt-16 h-12 w-48 animate-pulse rounded-full bg-[#242424]" /> : null}
+        {status === "missing" ? (
+          <MissingInvite detail="This ticket can’t be found. Check the link, or ask the sender to share it again." />
+        ) : null}
+        {status === "error" ? (
+          <MissingInvite detail={message ?? "The invitation couldn’t be opened."} onRetry={reload} />
+        ) : null}
+        {status === "ready" && invitation ? <ReadyInvite key={invitation.publicId} invitation={invitation} /> : null}
+        {invitation?.mode === "demo" ? (
+          <p className="text-center font-sans text-xs text-[#8A8A8A]">Preview stored on this browser. This link is not public.</p>
+        ) : null}
+      </main>
+    </PageFrame>
   );
 }
 
 function ReadyInvite({ invitation }: { invitation: Invitation }) {
-  const audio = useTicketAudio(invitation.audioUrl, invitation.audioDuration ?? 0);
+  const player = useAudioPlayer(invitation.audioUrl, invitation.audioDuration ?? 0);
+  const [torn, setTorn] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const [saving, setSaving] = useState<"accepted" | "declined" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmDecline, setConfirmDecline] = useState(false);
   const [current, setCurrent] = useState(invitation);
+  const hasAudio = Boolean(current.audioUrl);
+  const progress = player.duration > 0 ? Math.min(1, player.currentTime / player.duration) : 0;
+  const stageHeight = torn ? 400 : hasAudio ? 340 : 296.398;
+  const sender = visibleSender(current.senderName);
 
   const accept = async () => {
     setSaving("accepted");
     setError(null);
     try {
-      const next = await respondToInvitation(current.publicId, "accepted");
-      setCurrent(next);
+      setCurrent(await respondToInvitation(current.publicId, "accepted"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn’t save your reply. Try again.");
     } finally {
@@ -67,8 +70,7 @@ function ReadyInvite({ invitation }: { invitation: Invitation }) {
     setSaving("declined");
     setError(null);
     try {
-      const next = await respondToInvitation(current.publicId, "declined");
-      setCurrent(next);
+      setCurrent(await respondToInvitation(current.publicId, "declined"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn’t save your reply. Try again.");
     } finally {
@@ -77,67 +79,81 @@ function ReadyInvite({ invitation }: { invitation: Invitation }) {
   };
 
   return (
-    <div>
-      {current.recipientName ? (
-        <p className="text-center font-sans text-[11px] tracking-[0.2em] text-[#AAA9A6] uppercase">For {current.recipientName}</p>
-      ) : null}
-      <h1 className="mt-3 text-center font-serif text-5xl leading-[0.95] text-[#F5F2ED] md:text-6xl">Your ticket is ready.</h1>
-      <p className="mx-auto mt-4 max-w-md text-center text-[#AAA9A6]">
-        {current.senderName} has sent you a special invitation. Open the ticket details and RSVP to lock in your spot.
-      </p>
-      {current.message ? (
-        <p className="mx-auto mt-6 max-w-md text-center text-[15px] leading-relaxed text-[#C8C6C1]">{current.message}</p>
-      ) : null}
-
-      <div className="mt-10">
-        <Ticket
-          content={{
-            senderName: current.senderName,
-            title: current.title,
-            dateLabel: formatEventDate(current.eventDate),
-            timeLabel: formatEventTime(current.eventTime),
-            note: current.note ?? undefined,
-            location: current.location ?? undefined,
-          }}
-          hasAudio={Boolean(current.audioUrl)}
-          playback={{
-            expanded: audio.expanded,
-            playing: audio.playing,
-            currentTime: audio.currentTime,
-            duration: audio.duration,
-            error: audio.error,
-            onOpen: audio.open,
-            onToggle: audio.toggle,
-            onSeek: audio.seek,
-            onReplay: () => void audio.replay(),
-            onCollapse: audio.collapse,
-            onRetry: () => void audio.retry(),
-          }}
-        />
+    <div className="flex w-full flex-col items-center gap-8">
+      <div className="flex w-full flex-col items-center gap-2 text-center">
+        <p className="font-inter text-[11px] font-semibold tracking-widest text-[#A3A3A3] uppercase">You&apos;re invited to</p>
+        <h1 className="font-serif text-[32px] leading-[38px] text-[#F5F2ED]">{current.title}</h1>
       </div>
 
-      <div className="mt-8">
+      <div
+        className="w-full"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <ScaledBox width={STAGE_W} height={stageHeight}>
+          <TicketStack
+            data={{
+              title: current.title,
+              date: current.eventDate,
+              time: current.eventTime,
+              note: current.note ?? "",
+            }}
+            color={current.ticketColor}
+            form={current.ticketForm}
+            senderName={sender ?? undefined}
+            hovered={hovered}
+            hasAudio={hasAudio}
+            tearable
+            tornOff={torn}
+            showHint={hasAudio}
+            onStubTap={() => {
+              player.prime();
+              setTorn(true);
+            }}
+            audio={
+              hasAudio
+                ? { playing: player.playing, progress, toggle: player.toggle }
+                : null
+            }
+          />
+        </ScaledBox>
+      </div>
+
+      {hasAudio && torn ? (
+        <p className="font-inter text-[11px] font-semibold tracking-wide text-[#A3A3A3] uppercase">A little message for you</p>
+      ) : null}
+      {player.error ? <p className="text-center font-sans text-sm text-red-400">{player.error}</p> : null}
+
+      <div className="w-full">
         {current.rsvpStatus === "pending" ? (
           <RSVPControls
-            senderName={current.senderName}
+            senderName={sender ?? "them"}
             saving={saving}
             error={error}
             onAccept={() => void accept()}
             onDecline={() => setConfirmDecline(true)}
           />
         ) : (
-          <RSVPConfirmation status={current.rsvpStatus} senderName={current.senderName} />
+          <RSVPConfirmation status={current.rsvpStatus} senderName={sender ?? "They"} />
         )}
       </div>
 
+      <Link
+        to="/create"
+        onClick={() => clearEditing()}
+        className="flex w-full items-center justify-center rounded-full bg-[#F5F2ED] px-[18px] py-3.5 font-sans text-base font-semibold text-[#141414]"
+      >
+        Create your own ticket
+      </Link>
+
       {confirmDecline ? (
         <Dialog title="Can't make it?" onClose={() => setConfirmDecline(false)}>
-          <p className="mt-4 text-[#AAA9A6]">Would you like to let {current.senderName} know?</p>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <button type="button" className="btn btn-secondary flex-1" onClick={() => setConfirmDecline(false)}>
+          <p className="mt-4 text-[#AAA9A6]">Would you like to let {sender ?? "them"} know?</p>
+          <div className="mt-6 flex flex-col gap-3">
+            <button type="button" className="btn btn-secondary" onClick={() => setConfirmDecline(false)}>
               Go back
             </button>
-            <button type="button" className="btn btn-primary flex-1" onClick={() => void decline()}>
+            <button type="button" className="btn btn-primary" onClick={() => void decline()}>
               Confirm decline
             </button>
           </div>
@@ -147,28 +163,19 @@ function ReadyInvite({ invitation }: { invitation: Invitation }) {
   );
 }
 
-function TicketSkeleton() {
-  return (
-    <div>
-      <div className="mx-auto h-12 max-w-sm animate-pulse bg-[#242424]" />
-      <div className="mx-auto mt-8 aspect-[740/460] w-full max-w-[740px] animate-pulse rounded-[22px] bg-[#DFE1E4]/80" />
-    </div>
-  );
-}
-
 function MissingInvite({ detail, onRetry }: { detail: string; onRetry?: () => void }) {
   return (
-    <div className="mx-auto max-w-md text-center">
-      <h1 className="font-serif text-5xl leading-none">This ticket can’t be found.</h1>
-      <p className="mt-4 text-[#AAA9A6]">{detail}</p>
-      <div className="mt-6 flex justify-center gap-4">
+    <div className="flex w-full flex-col gap-4 pt-12 text-center">
+      <h1 className="font-serif text-[28px] leading-[34px] text-[#F5F2ED]">This invitation link is broken or incomplete</h1>
+      <p className="font-inter text-sm leading-[22px] text-[#A3A3A3]">{detail}</p>
+      <div className="mt-2 flex flex-col gap-3">
         {onRetry ? (
           <button type="button" className="btn btn-primary" onClick={onRetry}>
             Try again
           </button>
         ) : null}
-        <Link to="/" className="btn btn-secondary">
-          Make an invitation
+        <Link to="/create" className="btn btn-secondary" onClick={() => clearEditing()}>
+          Create your own ticket
         </Link>
       </div>
     </div>

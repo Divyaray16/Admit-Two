@@ -1,141 +1,136 @@
-import { Check, Copy, Share2 } from "lucide-react";
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { useTicketAudio } from "../hooks/useTicketAudio";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAudioPlayer } from "../hooks/useAudioPlayer";
+import { usePageTitle } from "../hooks/usePageTitle";
 import { usePublicInvitation } from "../hooks/usePublicInvitation";
-import { formatEventDate, formatEventTime, invitationUrl } from "../lib/format";
+import { markEditing } from "../lib/draftSession";
+import { invitationUrl, visibleSender } from "../lib/format";
 import { isLive } from "../lib/mode";
 import { findRegistryEntry } from "../lib/registry";
-import { usePageTitle } from "../hooks/usePageTitle";
-import { AppShell, ModeChip, TicketFooter } from "./SiteChrome";
+import { PageFrame } from "./SiteChrome";
+import { ScaledBox } from "./ScaledBox";
 import { Ticket } from "./Ticket";
+import { VoiceNotePlayer } from "./VoiceNotePlayer";
 
 export function InvitationShare() {
   const { publicId = "" } = useParams();
+  const navigate = useNavigate();
   const { status, invitation, message, reload } = usePublicInvitation(publicId);
   const [copied, setCopied] = useState(false);
-  const [shareNote, setShareNote] = useState<string | null>(null);
-  usePageTitle("It's ready to send · AdmitTwo");
-
+  usePageTitle("Your ticket is ready · Admit Two");
   const url = publicId ? invitationUrl(publicId) : "";
   const entry = publicId ? findRegistryEntry(publicId) : null;
-  const audio = useTicketAudio(invitation?.audioUrl ?? null, invitation?.audioDuration ?? 0);
+  const player = useAudioPlayer(invitation?.audioUrl ?? null, invitation?.audioDuration ?? 0);
+  const progress = player.duration > 0 ? Math.min(1, player.currentTime / player.duration) : 0;
   const demo = invitation?.mode === "demo" || !isLive;
+  const sender = visibleSender(invitation?.senderName);
 
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
+      window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      setShareNote("Couldn’t copy automatically. Select the link and copy it.");
+      setCopied(false);
     }
   };
 
-  const share = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: invitation?.title ?? "An invitation",
-          text: invitation ? `${invitation.senderName} sent you an invitation.` : "An invitation for you.",
-          url,
-        });
-        return;
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-      }
-    }
-    await copy();
+  const edit = () => {
+    markEditing();
+    navigate("/create");
   };
 
   return (
-    <AppShell width="narrow" eyebrow={<ModeChip />}>
-      <h1 className="text-center font-serif text-5xl leading-none text-[#F5F2ED] md:text-6xl">It&apos;s ready to send.</h1>
-      <p className="mx-auto mt-4 max-w-md text-center text-[#AAA9A6]">A little something, made just for them.</p>
-
-      {status === "loading" ? <div className="mx-auto mt-10 h-64 max-w-[740px] animate-pulse rounded-[22px] bg-[#242424]" /> : null}
-      {status === "missing" ? (
-        <p className="mt-8 text-center text-[#AAA9A6]">This invitation isn’t on this browser.</p>
-      ) : null}
-      {status === "error" ? (
-        <div className="mt-8 text-center">
-          <p className="text-[#D7B2AA]">{message}</p>
-          <button type="button" className="btn btn-secondary mt-4" onClick={reload}>
-            Try again
-          </button>
-        </div>
-      ) : null}
-
-      {invitation ? (
-        <>
-          <div className="mt-10">
-            <Ticket
-              content={{
-                senderName: invitation.senderName,
-                title: invitation.title,
-                dateLabel: formatEventDate(invitation.eventDate),
-                timeLabel: formatEventTime(invitation.eventTime),
-                note: invitation.note ?? undefined,
-                location: invitation.location ?? undefined,
-              }}
-              hasAudio={Boolean(invitation.audioUrl)}
-              playback={{
-                expanded: audio.expanded,
-                playing: audio.playing,
-                currentTime: audio.currentTime,
-                duration: audio.duration,
-                error: audio.error,
-                onOpen: audio.open,
-                onToggle: audio.toggle,
-                onSeek: audio.seek,
-                onReplay: () => void audio.replay(),
-                onCollapse: audio.collapse,
-                onRetry: () => void audio.retry(),
-              }}
-            />
-          </div>
-
-          <div className="mx-auto mt-8 max-w-lg border border-[#343434] bg-[#1D1D1D] p-4">
-            <p className="text-[11px] tracking-[0.16em] text-[#AAA9A6] uppercase">Invitation link</p>
-            <p className="mt-2 truncate font-sans text-sm text-[#F5F2ED]">{url}</p>
-            {demo ? (
-              <p className="mt-3 text-sm text-[#D9CBA8]">
-                Demo mode. This link only opens in this browser. It is not publicly shareable. Connect Supabase to send it to someone else.
-              </p>
-            ) : (
-              <p className="mt-3 text-sm text-[#AAA9A6]">
-                Anyone with this link can open the invitation. It doesn’t verify who they are.
-              </p>
-            )}
-            {shareNote ? <p className="mt-2 text-sm text-[#D7B2AA]">{shareNote}</p> : null}
-          </div>
-
-          <div className="mx-auto mt-5 flex max-w-lg flex-col gap-3 sm:flex-row">
-            <button type="button" className="btn btn-primary flex-1" onClick={() => void copy()}>
-              {copied ? <Check size={16} /> : <Copy size={16} />}
-              {copied ? "Copied" : "Copy invitation link"}
-            </button>
-            <button type="button" className="btn btn-secondary flex-1" onClick={() => void share()}>
-              <Share2 size={16} />
-              Share invitation
+    <PageFrame onBack={edit}>
+      <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center gap-6 px-5 pt-8 pb-24">
+        {status === "loading" ? <div className="h-40 w-full animate-pulse rounded-2xl bg-[#242424]" /> : null}
+        {status === "missing" ? <p className="text-center text-[#A3A3A3]">This invitation isn’t on this browser.</p> : null}
+        {status === "error" ? (
+          <div className="text-center">
+            <p className="text-red-400">{message}</p>
+            <button type="button" className="btn btn-secondary mt-4" onClick={reload}>
+              Try again
             </button>
           </div>
-          <div className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2">
-            <Link to={`/i/${invitation.publicId}`} className="btn btn-quiet">
-              Preview invitation
-            </Link>
-            {entry ? (
-              <Link to={`/manage/${invitation.publicId}#${entry.manageToken}`} className="btn btn-quiet">
-                View responses
-              </Link>
+        ) : null}
+
+        {invitation ? (
+          <>
+            <div className="w-full text-center">
+              <h1 className="mb-1 font-serif text-2xl text-[#F5F2ED]">Your ticket is ready!</h1>
+              <p className="font-sans text-sm text-[#F5F2ED]/70">Copy the link and send it to your date</p>
+            </div>
+
+            <div className="w-full overflow-hidden py-4">
+              <ScaledBox width={354} height={212}>
+                <Ticket
+                  data={{
+                    title: invitation.title,
+                    date: invitation.eventDate,
+                    time: invitation.eventTime,
+                    note: invitation.note ?? "",
+                  }}
+                  color={invitation.ticketColor}
+                  form={invitation.ticketForm}
+                  senderName={sender ?? undefined}
+                  hasAudio={Boolean(invitation.audioUrl)}
+                  audio={
+                    invitation.audioUrl
+                      ? { playing: player.playing, progress, toggle: player.toggle }
+                      : null
+                  }
+                />
+              </ScaledBox>
+            </div>
+
+            {invitation.audioUrl ? (
+              <div className="flex w-full flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-5">
+                <p className="font-inter text-[11px] font-semibold tracking-wide text-[#7d7d7d] uppercase">Voice note</p>
+                <VoiceNotePlayer playing={player.playing} progress={progress} onToggle={player.toggle} />
+                {player.error ? <p className="font-sans text-sm text-red-600">{player.error}</p> : null}
+              </div>
             ) : null}
-            <Link to="/" className="btn btn-quiet">
-              Create another invitation
-            </Link>
-          </div>
-        </>
-      ) : null}
-      <TicketFooter />
-    </AppShell>
+
+            <div className="flex w-full flex-col gap-3">
+              <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4">
+                <p className="font-inter text-[11px] font-semibold tracking-wide text-[#7d7d7d] uppercase">Your link</p>
+                <p className="font-sans text-sm leading-relaxed break-all text-[#0d0d0f]">{url}</p>
+                {demo ? (
+                  <p className="font-sans text-xs text-[#7d7d7d]">
+                    Demo mode. This link only opens in this browser. Connect Supabase to send it to someone else.
+                  </p>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => void copy()}
+                  className="w-full rounded-full bg-[#272727] py-3 font-sans text-sm font-semibold text-white"
+                  data-testid="button-copy-link"
+                >
+                  {copied ? "Copied! ✓" : "Copy link"}
+                </button>
+              </div>
+              <Link
+                to={`/i/${invitation.publicId}`}
+                className="flex w-full items-center justify-center rounded-full border border-[#F5F2ED] py-3 font-sans text-sm font-semibold text-[#F5F2ED]"
+              >
+                Preview as recipient
+              </Link>
+              <button
+                type="button"
+                onClick={edit}
+                className="w-full rounded-full border border-[#3a3a3a] py-3 font-sans text-sm font-semibold text-[#A3A3A3]"
+              >
+                Edit ticket
+              </button>
+              {entry ? (
+                <Link to={`/manage/${invitation.publicId}#${entry.manageToken}`} className="btn btn-quiet">
+                  View responses
+                </Link>
+              ) : null}
+            </div>
+          </>
+        ) : null}
+      </main>
+    </PageFrame>
   );
 }

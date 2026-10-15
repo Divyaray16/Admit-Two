@@ -128,12 +128,23 @@ export function useAudioPlayer(src: string | null, hintDuration = 0) {
     return play();
   }, [ensure, play]);
 
+  const prime = useCallback(() => {
+    const audio = ensure();
+    if (!audio || audio.readyState >= 2) return;
+    try {
+      audio.load();
+    } catch {
+      /* The next play attempt will surface a failure. */
+    }
+  }, [ensure]);
+
   return {
     play,
     pause,
     toggle,
     seek,
     replay,
+    prime,
     playing,
     currentTime,
     duration: duration || hintDuration,

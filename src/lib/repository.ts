@@ -11,6 +11,7 @@ export class InvitationSaveError extends Error {
 }
 import { demoCreate, demoGetManaged, demoGetPublic, demoRespond } from "./demoStore";
 import { emptyToNull } from "./format";
+import { decodeTicketStyle, encodeTicketStyle } from "./ticketStyle";
 import { newManageToken, newPublicId } from "./ids";
 import { isLive } from "./mode";
 import { findRegistryEntry, rememberInvitation } from "./registry";
@@ -53,6 +54,7 @@ function audioPublicUrl(path: string | null): string | null {
 
 function mapRow(row: InvitationRow, mode: Invitation["mode"]): Invitation {
   const duration = row.audio_duration == null ? null : Number(row.audio_duration);
+  const style = decodeTicketStyle(row.location);
   return {
     publicId: row.public_id,
     senderName: row.sender_name,
@@ -60,9 +62,11 @@ function mapRow(row: InvitationRow, mode: Invitation["mode"]): Invitation {
     title: row.title,
     eventDate: row.event_date,
     eventTime: row.event_time,
-    location: row.location,
+    location: style.location,
     message: row.message,
     note: row.note,
+    ticketColor: style.color,
+    ticketForm: style.form,
     audioUrl: audioPublicUrl(row.audio_path),
     audioDuration: duration != null && Number.isFinite(duration) ? duration : null,
     rsvpStatus: row.rsvp_status,
@@ -145,14 +149,14 @@ export async function createInvitation(
   const { error } = await supabase.rpc("create_invitation", {
     p_public_id: publicId,
     p_manage_token: manageToken,
-    p_sender_name: draft.senderName.trim(),
+    p_sender_name: draft.senderName.trim() || "\u200b",
     p_recipient_name: emptyToNull(draft.recipientName),
     p_title: draft.title.trim(),
     p_event_date: draft.eventDate,
     p_event_time: draft.eventTime,
-    p_location: emptyToNull(draft.location),
-    p_message: draft.message.trim(),
-    p_note: emptyToNull(draft.note),
+    p_location: encodeTicketStyle(draft.ticketColor, draft.ticketForm),
+    p_message: draft.note.trim() || "You're invited.",
+    p_note: draft.note.trim(),
   });
   if (error) throw new InvitationSaveError(asError(error, "The invitation couldn’t be saved.").message, null);
 

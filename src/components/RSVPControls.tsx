@@ -14,7 +14,7 @@ export function RSVPControls({ senderName, saving, error, onAccept, onDecline }:
           {error}
         </p>
       ) : null}
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-col gap-3">
         <button type="button" className="btn btn-primary flex-1" disabled={saving != null} onClick={onAccept}>
           {saving === "accepted" ? "Saving…" : "Accept Invitation"}
         </button>

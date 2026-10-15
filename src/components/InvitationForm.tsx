@@ -15,7 +15,7 @@ export function InvitationForm({ draft, errors, showErrors, onChange }: Invitati
         id="sender-name"
         label="Your name"
         value={draft.senderName}
-        placeholder="Ira"
+        placeholder="Divya Ray"
         autoComplete="name"
         required
         error={showErrors ? errors.senderName : undefined}

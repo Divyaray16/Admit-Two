@@ -9,6 +9,9 @@ export type VoiceTake = {
   mime: string;
 };
 
+export type TicketColor = "green" | "white" | "pink" | "violet" | "blue";
+export type TicketForm = 1 | 2 | 3;
+
 export type InvitationDraft = {
   senderName: string;
   recipientName: string;
@@ -18,6 +21,8 @@ export type InvitationDraft = {
   location: string;
   message: string;
   note: string;
+  ticketColor: TicketColor;
+  ticketForm: TicketForm;
   audio: VoiceTake | null;
 };
 
@@ -31,6 +36,8 @@ export type Invitation = {
   location: string | null;
   message: string;
   note: string | null;
+  ticketColor: TicketColor;
+  ticketForm: TicketForm;
   audioUrl: string | null;
   audioDuration: number | null;
   rsvpStatus: RsvpStatus;
@@ -54,15 +61,17 @@ export const EMPTY_DRAFT: InvitationDraft = {
   location: "",
   message: "",
   note: "",
+  ticketColor: "green",
+  ticketForm: 1,
   audio: null,
 };
 
 export const SAMPLE_PREVIEW = {
-  senderName: "Ira",
+  senderName: "Divya Ray",
   title: "movie night, just us two",
   eventDate: "2026-09-03",
   eventTime: "20:00",
-  note: "I'll bring the popcorn.",
+  note: "i'll bring the popcorn",
 };
 
 export type FieldErrors = Partial<Record<keyof Omit<InvitationDraft, "audio">, string>>;

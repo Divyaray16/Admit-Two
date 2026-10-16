@@ -75,10 +75,50 @@ export type ProjectedTrace = {
 
 export type GraticuleLine = { x1: number; y1: number; x2: number; y2: number };
 
+export type ProjectedMarker = { id: string; x: number; y: number };
+
 export type Projection = {
   strokes: ProjectedTrace[];
   graticule: GraticuleLine[];
+  markers: ProjectedMarker[];
 };
+
+export type SpreadMark = {
+  id: string;
+  x: number;
+  y: number;
+  nx: number;
+  ny: number;
+  createdAt: number;
+};
+
+export type PlacedMark = {
+  id: string;
+  x: number;
+  y: number;
+  dotX: number;
+  dotY: number;
+};
+
+/** Keep overlapping memories tappable. The newest mark steps out along the notch. */
+export function spreadMarks(marks: SpreadMark[]): PlacedMark[] {
+  const sorted = [...marks].sort((a, b) => a.createdAt - b.createdAt);
+  const placed: { dotX: number; dotY: number }[] = [];
+  return sorted.map((mark) => {
+    let step = 0;
+    let len = 12;
+    let dotX = mark.x + mark.nx * len;
+    let dotY = mark.y + mark.ny * len;
+    while (step < 3 && placed.some((item) => Math.hypot(item.dotX - dotX, item.dotY - dotY) < 18)) {
+      step += 1;
+      len = 12 + step * 13;
+      dotX = mark.x + mark.nx * len;
+      dotY = mark.y + mark.ny * len;
+    }
+    placed.push({ dotX, dotY });
+    return { id: mark.id, x: mark.x, y: mark.y, dotX, dotY };
+  });
+}
 
 type LocalPoint = { x: number; y: number; lat: number; lng: number };
 
@@ -114,9 +154,15 @@ function niceStep(span: number): number {
  * Project traces into a north-up pixel frame.
  * Longitude is scaled by cos(latitude) so a city block is not stretched.
  */
-export function projectTraces(traces: Trace[], width: number, height: number, pad: number): Projection {
+export function projectTraces(
+  traces: Trace[],
+  width: number,
+  height: number,
+  pad: number,
+  markers: { id: string; lat: number; lng: number }[] = [],
+): Projection {
   const points = collect(traces);
-  if (points.length === 0 || width < 8 || height < 8) return { strokes: [], graticule: [] };
+  if (points.length === 0 || width < 8 || height < 8) return { strokes: [], graticule: [], markers: [] };
 
   const originLng = points[0]?.lng ?? 0;
   const midLat = points.reduce((sum, point) => sum + point.lat, 0) / points.length;
@@ -187,7 +233,13 @@ export function projectTraces(traces: Trace[], width: number, height: number, pa
     toScreen,
   });
 
-  return { strokes, graticule };
+  const projectedMarkers = markers.map((marker) => {
+    const localX = normalizeLng(marker.lng, originLng) * cos;
+    const screen = toScreen(localX, marker.lat);
+    return { id: marker.id, x: screen.x, y: screen.y };
+  });
+
+  return { strokes, graticule, markers: projectedMarkers };
 }
 
 function buildGraticule(input: {

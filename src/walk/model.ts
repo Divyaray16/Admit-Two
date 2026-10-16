@@ -1,4 +1,4 @@
-import { WEEK_MS, type Walk, type WalkPoint, type WalkSegment } from "./types.ts";
+import { WEEK_MS, type Walk, type WalkPin, type WalkPoint, type WalkSegment } from "./types.ts";
 
 export function hasPoints(walk: Walk): boolean {
   return walk.segments.some((segment) => segment.points.length > 0);
@@ -48,6 +48,28 @@ export function inLastWeek(walk: Walk, now: number): boolean {
 
 export function weekWalks(walks: Walk[], now: number): Walk[] {
   return walks.filter((walk) => inLastWeek(walk, now)).sort((a, b) => a.startedAt - b.startedAt);
+}
+
+function startOfLocalDay(t: number): number {
+  const date = new Date(t);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+}
+
+/** Today is full cream. Each older day steps back, through the week. */
+export function dayOpacity(walk: Walk, now: number): number {
+  const t = lastPoint(walk)?.t ?? walk.startedAt;
+  const age = Math.round((startOfLocalDay(now) - startOfLocalDay(t)) / 86_400_000);
+  const clamped = Math.min(6, Math.max(0, age));
+  return 1 - clamped * 0.11;
+}
+
+export function findPin(walks: Walk[], id: string): { walkId: string; pin: WalkPin } | null {
+  for (const walk of walks) {
+    const pin = (walk.pins ?? []).find((item) => item.id === id);
+    if (pin) return { walkId: walk.id, pin };
+  }
+  return null;
 }
 
 export function formatClock(ms: number): string {

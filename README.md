@@ -56,6 +56,12 @@ If the storage policy fails in the SQL editor, create a public bucket named `inv
 
 Recording needs a secure page (`localhost` or HTTPS) and a microphone. If permission is blocked, the recorder explains how to try again.
 
+## Walking line
+
+Open [http://127.0.0.1:4731/walk](http://127.0.0.1:4731/walk). The page draws one cream line where this phone has walked in the last seven days. Start asks for location. Pause and End sit under the line. The path stays in this browser (`localStorage`). Nothing is uploaded.
+
+You can pin a picture onto the line while a walk is going, or after it ends. Camera and Photo library both accept an image. The picture is resized on the phone and kept in IndexedDB, not on a server. Tap the mark on the line to see it, add a short caption, or remove it. Photos stay on the phone.
+
 ## Scripts
 
 ```bash

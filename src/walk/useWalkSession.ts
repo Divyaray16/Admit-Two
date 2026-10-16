@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { decidePoint } from "./geo.ts";
 import { applyPoint, freshTail, hasPoints, lastPoint } from "./model.ts";
-import { loadWalks, saveWalks } from "./storage.ts";
-import type { Walk, WalkPoint } from "./types.ts";
+import { loadWalks, saveWalks, trySaveWalks } from "./storage.ts";
+import type { Walk, WalkPin, WalkPoint } from "./types.ts";
 
 export type SessionStatus = "idle" | "walking" | "paused" | "denied" | "unsupported";
 
@@ -28,6 +28,7 @@ function blankWalk(): Walk {
     endedAt: null,
     pauses: [],
     segments: [{ points: [] }],
+    pins: [],
   };
 }
 
@@ -249,7 +250,36 @@ export function useWalkSession() {
     setStatus(geolocationAvailable() ? "idle" : "unsupported");
   }
 
+  function addPin(walkId: string, pin: WalkPin): boolean {
+    const next = walksRef.current.map((walk) =>
+      walk.id === walkId ? { ...walk, pins: [...(walk.pins ?? []), pin] } : walk,
+    );
+    if (!next.some((walk) => walk.pins.some((item) => item.id === pin.id))) return false;
+    if (!trySaveWalks(next)) return false;
+    commit(next);
+    return true;
+  }
+
+  function setPinCaption(pinId: string, caption: string) {
+    const text = caption.slice(0, 80);
+    commit(
+      walksRef.current.map((walk) => ({
+        ...walk,
+        pins: (walk.pins ?? []).map((pin) => (pin.id === pinId ? { ...pin, caption: text } : pin)),
+      })),
+    );
+  }
+
+  function removePin(pinId: string) {
+    commit(
+      walksRef.current.map((walk) => ({
+        ...walk,
+        pins: (walk.pins ?? []).filter((pin) => pin.id !== pinId),
+      })),
+    );
+  }
+
   const live = walks.find((walk) => walk.endedAt === null) ?? null;
 
-  return { walks, live, status, notice, start, pause, resume, end };
+  return { walks, live, status, notice, start, pause, resume, end, addPin, setPinCaption, removePin };
 }

@@ -45,7 +45,7 @@ function isPastDate(isoDate: string): boolean {
   return isoDate < todayIso();
 }
 
-function isPastTimeToday(isoDate: string, time: string): boolean {
+export function isPastTimeToday(isoDate: string, time: string): boolean {
   if (isoDate !== todayIso()) return false;
   const [hourPart, minutePart] = time.split(":");
   const hour = Number(hourPart);

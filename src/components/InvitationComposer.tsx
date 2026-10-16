@@ -4,7 +4,7 @@ import { useAudioPlayer } from "../hooks/useAudioPlayer";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { useVoiceRecorder } from "../hooks/useVoiceRecorder";
 import { consumeEditDraft, saveCreateDraft } from "../lib/draftSession";
-import { formatEventTime, mmDdYyyy, validateDraft } from "../lib/format";
+import { isPastTimeToday, validateDraft } from "../lib/format";
 import { isLive } from "../lib/mode";
 import { createInvitation, InvitationSaveError } from "../lib/repository";
 import { TICKET_COLORS } from "../lib/ticketStyle";
@@ -12,6 +12,7 @@ import { EMPTY_DRAFT, type CreatedInvitation, type FieldErrors, type InvitationD
 import { PageFrame } from "./SiteChrome";
 import { ScaledBox } from "./ScaledBox";
 import { Ticket } from "./Ticket";
+import { DateField, TimeField } from "./WhenPickers";
 import { VoiceNotePlayer } from "./VoiceNotePlayer";
 
 function clock(seconds: number): string {
@@ -161,26 +162,41 @@ export function InvitationComposer() {
           />
 
           <div className="flex gap-[19px]">
-            <PickerField
-              label="date"
-              required
-              type="date"
-              value={draft.eventDate}
-              placeholder="mm.dd.yyyy"
-              display={draft.eventDate ? mmDdYyyy(draft.eventDate) : ""}
-              error={showErrors ? errors.eventDate : undefined}
-              onChange={(eventDate) => patch({ eventDate })}
-            />
-            <PickerField
-              label="time"
-              required
-              type="time"
-              value={draft.eventTime}
-              placeholder="--:-- --"
-              display={draft.eventTime ? formatEventTime(draft.eventTime) : ""}
-              error={showErrors ? errors.eventTime : undefined}
-              onChange={(eventTime) => patch({ eventTime })}
-            />
+            <div className="flex flex-1 flex-col gap-1.5">
+              <div className="flex gap-0.5 font-inter text-[12px] font-semibold uppercase">
+                <span className="text-[#A3A3A3]">date</span>
+                <span className="text-[#F5F2ED]">*</span>
+              </div>
+              <DateField
+                value={draft.eventDate}
+                invalid={Boolean(showErrors && errors.eventDate)}
+                onChange={(eventDate) => {
+                  if (draft.eventTime && isPastTimeToday(eventDate, draft.eventTime)) {
+                    patch({ eventDate, eventTime: "" });
+                    return;
+                  }
+                  patch({ eventDate });
+                }}
+              />
+              {showErrors && errors.eventDate ? (
+                <p className="font-inter text-sm text-red-400">{errors.eventDate}</p>
+              ) : null}
+            </div>
+            <div className="flex flex-1 flex-col gap-1.5">
+              <div className="flex gap-0.5 font-inter text-[12px] font-semibold uppercase">
+                <span className="text-[#A3A3A3]">time</span>
+                <span className="text-[#F5F2ED]">*</span>
+              </div>
+              <TimeField
+                value={draft.eventTime}
+                date={draft.eventDate}
+                invalid={Boolean(showErrors && errors.eventTime)}
+                onChange={(eventTime) => patch({ eventTime })}
+              />
+              {showErrors && errors.eventTime ? (
+                <p className="font-inter text-sm text-red-400">{errors.eventTime}</p>
+              ) : null}
+            </div>
           </div>
 
           <Field
@@ -340,46 +356,6 @@ function Field({
         ) : null}
       </div>
       {multiline ? <textarea {...shared} rows={2} /> : <input {...shared} type="text" />}
-      {error ? <p className="font-inter text-sm text-red-400">{error}</p> : null}
-    </div>
-  );
-}
-
-function PickerField({
-  label,
-  value,
-  display,
-  placeholder,
-  type,
-  required,
-  error,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  display: string;
-  placeholder: string;
-  type: "date" | "time";
-  required?: boolean;
-  error?: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="flex flex-1 flex-col gap-1.5">
-      <div className="flex gap-0.5 font-inter text-[12px] font-semibold uppercase">
-        <span className="text-[#A3A3A3]">{label}</span>
-        {required ? <span className="text-[#F5F2ED]">*</span> : null}
-      </div>
-      <div className="relative">
-        <div className={`paper-field ${value ? "text-[#181d27]" : "text-[#717680]"}`}>{value ? display : placeholder}</div>
-        <input
-          type={type}
-          value={value}
-          aria-label={label}
-          onChange={(event) => onChange(event.target.value)}
-          className="absolute inset-0 cursor-pointer opacity-0"
-        />
-      </div>
       {error ? <p className="font-inter text-sm text-red-400">{error}</p> : null}
     </div>
   );

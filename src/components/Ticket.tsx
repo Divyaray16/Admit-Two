@@ -100,7 +100,7 @@ export function Ticket({
             }}
             role={canTear ? "button" : undefined}
             tabIndex={canTear ? 0 : undefined}
-            aria-label={canTear ? "Tap to tear off voice note stub" : undefined}
+            aria-label={canTear ? "tap to listen" : undefined}
             data-testid="ticket-stub"
             data-torn={tornOff ? "true" : "false"}
           >

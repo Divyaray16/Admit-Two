@@ -78,7 +78,7 @@ export function TicketStack({
       {showHint && !tornOff ? (
         <div className="pointer-events-none absolute top-[272px] left-0 w-[396.807px]" data-testid="hint-tap-to-tear">
           <span className="absolute top-[18px] left-[160px] font-hand text-[16px] leading-normal whitespace-nowrap text-[#F5F2ED]">
-            tap to tear off
+            tap to listen
           </span>
           <motion.svg
             width="83"

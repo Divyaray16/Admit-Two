@@ -108,11 +108,7 @@ export function InvitationShare() {
               >
                 Preview as recipient
               </Link>
-              <button
-                type="button"
-                onClick={edit}
-                className="w-full rounded-full border border-[#3a3a3a] py-3 font-sans text-sm font-semibold text-[#A3A3A3]"
-              >
+              <button type="button" onClick={edit} className="btn-outline">
                 Edit ticket
               </button>
               {entry ? (

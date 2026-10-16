@@ -172,6 +172,30 @@ button {
   border-color: #f5f2ed;
 }
 
+.btn-outline {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #f5f2ed;
+  border-radius: 999px;
+  background: transparent;
+  padding: 0.75rem 1rem;
+  color: #f5f2ed;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  cursor: pointer;
+  appearance: none;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.btn-outline:hover {
+  background: #f5f2ed;
+  color: #141414;
+}
+
 .btn-quiet {
   min-height: 44px;
   border: 0;

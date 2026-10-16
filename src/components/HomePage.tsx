@@ -80,9 +80,6 @@ export function HomePage() {
             Create your ticket
           </Link>
           <p className="font-sans text-xs text-[#A3A3A3]">No sign-up needed · ready in a minute</p>
-          <Link to="/walk" className="mt-6 font-sans text-xs text-[#6f6e6b]">
-            Walking line
-          </Link>
         </div>
       </main>
     </PageFrame>

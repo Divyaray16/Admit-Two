@@ -16,16 +16,6 @@ export type PauseSpan = {
   resumedAt: number | null;
 };
 
-/** A photograph pinned to one moment on the line. The image itself lives in IndexedDB. */
-export type WalkPin = {
-  id: string;
-  lat: number;
-  lng: number;
-  t: number;
-  caption: string;
-  createdAt: number;
-};
-
 export type Walk = {
   id: string;
   startedAt: number;
@@ -33,7 +23,6 @@ export type Walk = {
   pauses: PauseSpan[];
   /** A pause starts a new segment so the stroke does not jump the gap. */
   segments: WalkSegment[];
-  pins: WalkPin[];
 };
 
 export const WEEK_MS = 7 * 24 * 60 * 60 * 1000;

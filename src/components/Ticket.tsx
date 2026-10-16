@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import type { TicketColor, TicketForm } from "../lib/ticketStyle";
 import { STUB_BARS, ticketAsset } from "../lib/ticketStyle";
@@ -15,6 +16,7 @@ export type TicketAudioControl = {
   progress: number;
   isLoading?: boolean;
   toggle: () => void;
+  prime?: () => void;
 };
 
 type TicketProps = {
@@ -36,6 +38,8 @@ const TEAR_SPRING = {
   y: { type: "spring" as const, stiffness: 180, damping: 20, mass: 0.8 },
   rotate: { type: "spring" as const, stiffness: 160, damping: 18, mass: 0.8 },
 };
+
+const SHORT_TEAR = { duration: 0.18, ease: "easeOut" as const };
 
 export function Ticket({
   data,
@@ -76,22 +80,29 @@ export function Ticket({
             style={{ left: 291, top: 0, width: 65, height: 212, zIndex: tornOff ? 20 : 1 }}
             initial={false}
             animate={tornOff ? { x: -146.5, y: 200, rotate: 90 } : { x: 0, y: 0, rotate: 0 }}
-            transition={reduce ? { duration: 0 } : tornOff ? TEAR_SPRING : { duration: 0 }}
+            transition={reduce ? SHORT_TEAR : tornOff ? TEAR_SPRING : SHORT_TEAR}
             onClick={(event) => {
               event.stopPropagation();
-              if (canTear) onStubTap?.();
+              if (!canTear) return;
+              const target = event.target;
+              if (target instanceof Element && target.closest("button")) return;
+              audio?.prime?.();
+              onStubTap?.();
             }}
             onKeyDown={(event) => {
               if (!canTear) return;
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                onStubTap?.();
-              }
+              if (event.key !== "Enter" && event.key !== " ") return;
+              const target = event.target;
+              if (target instanceof Element && target.closest("button")) return;
+              event.preventDefault();
+              audio?.prime?.();
+              onStubTap?.();
             }}
             role={canTear ? "button" : undefined}
             tabIndex={canTear ? 0 : undefined}
             aria-label={canTear ? "Tap to tear off voice note stub" : undefined}
             data-testid="ticket-stub"
+            data-torn={tornOff ? "true" : "false"}
           >
             <img alt="" className="absolute inset-0 block size-full max-w-none" src={ticketAsset(form, color, "stub2")} />
             <StubWave left={18.6} progress={decorative ? 0 : (audio?.progress ?? 0)} />
@@ -100,6 +111,8 @@ export function Ticket({
               audio={audio}
               canPlay={canPlay}
               decorative={decorative}
+              tornOff={tornOff}
+              onTear={onStubTap}
             />
           </motion.div>
         </>
@@ -204,12 +217,18 @@ function StubPlay({
   audio,
   canPlay,
   decorative,
+  tornOff = false,
+  onTear,
 }: {
   left: number;
   audio: TicketAudioControl | null;
   canPlay: boolean;
   decorative: boolean;
+  tornOff?: boolean;
+  onTear?: () => void;
 }) {
+  const tornRef = useRef(tornOff);
+  tornRef.current = tornOff;
   const className =
     "absolute flex items-center rounded-[35.471px] border-[1.419px] border-solid border-[#272727] p-[8.513px] transition-colors before:absolute before:-inset-3 before:content-['']";
   const icon = audio?.isLoading ? (
@@ -235,6 +254,12 @@ function StubPlay({
       style={{ left, top: 157.49 }}
       onClick={(event) => {
         event.stopPropagation();
+        if (!tornRef.current && onTear) {
+          tornRef.current = true;
+          onTear();
+          if (!audio.playing) audio.toggle();
+          return;
+        }
         audio.toggle();
       }}
       aria-label={audio.playing ? "Pause voice note" : "Play voice note"}

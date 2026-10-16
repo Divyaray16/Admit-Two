@@ -103,13 +103,10 @@ function ReadyInvite({ invitation }: { invitation: Invitation }) {
             tearable
             tornOff={torn}
             showHint={hasAudio}
-            onStubTap={() => {
-              player.prime();
-              setTorn(true);
-            }}
+            onStubTap={() => setTorn(true)}
             audio={
               hasAudio
-                ? { playing: player.playing, progress, toggle: player.toggle }
+                ? { playing: player.playing, progress, toggle: player.toggle, prime: player.prime }
                 : null
             }
           />

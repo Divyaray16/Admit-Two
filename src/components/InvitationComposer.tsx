@@ -34,6 +34,10 @@ export function InvitationComposer() {
   const recorder = useVoiceRecorder();
   const player = useAudioPlayer(recorder.take?.url ?? null, recorder.take?.duration ?? 0);
   const progress = player.duration > 0 ? Math.min(1, player.currentTime / player.duration) : 0;
+  const takeUrl = recorder.take?.url ?? null;
+  const [tornUrl, setTornUrl] = useState<string | null>(null);
+  const torn = Boolean(takeUrl) && tornUrl === takeUrl;
+  const previewHeight = torn ? 400 : 212;
   const ready = Boolean(draft.title.trim() && draft.eventDate && draft.eventTime && draft.note.trim());
   const busy = phase === "saving" || phase === "uploading";
 
@@ -72,8 +76,8 @@ export function InvitationComposer() {
 
   return (
     <PageFrame backHref="/">
-      <div className="sticky top-0 z-40 border-b border-[#2a2a2a] bg-[#141414] py-3">
-        <ScaledBox width={354} height={212}>
+      <div className={`${torn ? "relative" : "sticky top-0"} z-40 border-b border-[#2a2a2a] bg-[#141414] py-3`}>
+        <ScaledBox width={354} height={previewHeight}>
           <Ticket
             data={{
               title: draft.title,
@@ -85,9 +89,14 @@ export function InvitationComposer() {
             form={draft.ticketForm}
             senderName={draft.senderName}
             hasAudio={Boolean(recorder.take)}
+            tearable={Boolean(recorder.take)}
+            tornOff={torn}
+            onStubTap={() => {
+              if (takeUrl) setTornUrl(takeUrl);
+            }}
             audio={
               recorder.take
-                ? { playing: player.playing, progress, isLoading: false, toggle: player.toggle }
+                ? { playing: player.playing, progress, isLoading: false, toggle: player.toggle, prime: player.prime }
                 : null
             }
           />

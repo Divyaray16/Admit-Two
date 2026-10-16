@@ -1,6 +1,4 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { isLive, supabaseAnonKey, supabaseUrl } from "./mode";
+import { isSupabase, supabaseAnonKey, supabaseUrl } from "./mode";
 
-export const supabase: SupabaseClient | null = isLive
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+export const supabase: SupabaseClient | null = isSupabase ? createClient(supabaseUrl, supabaseAnonKey) : null;

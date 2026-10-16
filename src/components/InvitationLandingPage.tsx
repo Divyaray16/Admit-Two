@@ -32,9 +32,6 @@ export function InvitationLandingPage() {
           <MissingInvite detail={message ?? "The invitation couldn’t be opened."} onRetry={reload} />
         ) : null}
         {status === "ready" && invitation ? <ReadyInvite key={invitation.publicId} invitation={invitation} /> : null}
-        {invitation?.mode === "demo" ? (
-          <p className="text-center font-sans text-xs text-[#8A8A8A]">Preview stored on this browser. This link is not public.</p>
-        ) : null}
       </main>
     </PageFrame>
   );

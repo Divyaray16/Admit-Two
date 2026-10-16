@@ -5,7 +5,6 @@ import { usePageTitle } from "../hooks/usePageTitle";
 import { usePublicInvitation } from "../hooks/usePublicInvitation";
 import { markEditing } from "../lib/draftSession";
 import { invitationUrl, visibleSender } from "../lib/format";
-import { isLive } from "../lib/mode";
 import { findRegistryEntry } from "../lib/registry";
 import { PageFrame } from "./SiteChrome";
 import { ScaledBox } from "./ScaledBox";
@@ -22,7 +21,6 @@ export function InvitationShare() {
   const entry = publicId ? findRegistryEntry(publicId) : null;
   const player = useAudioPlayer(invitation?.audioUrl ?? null, invitation?.audioDuration ?? 0);
   const progress = player.duration > 0 ? Math.min(1, player.currentTime / player.duration) : 0;
-  const demo = invitation?.mode === "demo" || !isLive;
   const sender = visibleSender(invitation?.senderName);
 
   const copy = async () => {
@@ -44,7 +42,7 @@ export function InvitationShare() {
     <PageFrame onBack={edit}>
       <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center gap-6 px-5 pt-8 pb-24">
         {status === "loading" ? <div className="h-40 w-full animate-pulse rounded-2xl bg-[#242424]" /> : null}
-        {status === "missing" ? <p className="text-center text-[#A3A3A3]">This invitation isn’t on this browser.</p> : null}
+        {status === "missing" ? <p className="text-center text-[#A3A3A3]">This invitation can’t be found.</p> : null}
         {status === "error" ? (
           <div className="text-center">
             <p className="text-red-400">{message}</p>
@@ -95,11 +93,6 @@ export function InvitationShare() {
               <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4">
                 <p className="font-inter text-[11px] font-semibold tracking-wide text-[#7d7d7d] uppercase">Your link</p>
                 <p className="font-sans text-sm leading-relaxed break-all text-[#0d0d0f]">{url}</p>
-                {demo ? (
-                  <p className="font-sans text-xs text-[#7d7d7d]">
-                    Demo mode. This link only opens in this browser. Connect Supabase to send it to someone else.
-                  </p>
-                ) : null}
                 <button
                   type="button"
                   onClick={() => void copy()}

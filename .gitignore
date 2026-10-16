@@ -9,6 +9,9 @@ lerna-debug.log*
 
 node_modules
 dist
+
+# Invitations and voice notes written by the server store
+data/
 .env
 .env.*
 !.env.example

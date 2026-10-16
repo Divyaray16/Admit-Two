@@ -5,7 +5,6 @@ import { usePageTitle } from "../hooks/usePageTitle";
 import { useVoiceRecorder } from "../hooks/useVoiceRecorder";
 import { consumeEditDraft, saveCreateDraft } from "../lib/draftSession";
 import { isPastTimeToday, validateDraft } from "../lib/format";
-import { isLive } from "../lib/mode";
 import { createInvitation, InvitationSaveError } from "../lib/repository";
 import { TICKET_COLORS } from "../lib/ticketStyle";
 import { EMPTY_DRAFT, type CreatedInvitation, type FieldErrors, type InvitationDraft, type TicketForm } from "../types";
@@ -293,12 +292,6 @@ export function InvitationComposer() {
             </div>
             {recorder.detail ? <p className="font-inter text-sm text-red-400">{recorder.detail}</p> : null}
           </div>
-
-          {!isLive ? (
-            <p className="font-sans text-xs text-[#A3A3A3]">
-              Demo mode. The link opens in this browser until Supabase is connected.
-            </p>
-          ) : null}
 
           {formError ? <p className="text-center font-inter text-sm text-red-400">{formError}</p> : null}
 

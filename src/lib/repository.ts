@@ -1,4 +1,11 @@
 import type { CreatedInvitation, Invitation, InvitationDraft, RsvpStatus } from "../types";
+import { emptyToNull } from "./format";
+import { newManageToken, newPublicId } from "./ids";
+import { isSupabase } from "./mode";
+import { rememberInvitation } from "./registry";
+import { serverAttachAudio, serverCreate, serverGetManaged, serverGetPublic, serverRespond } from "./serverApi";
+import { supabase } from "./supabase";
+import { decodeTicketStyle, encodeTicketStyle } from "./ticketStyle";
 
 export class InvitationSaveError extends Error {
   created: CreatedInvitation | null;
@@ -9,13 +16,6 @@ export class InvitationSaveError extends Error {
     this.created = created;
   }
 }
-import { demoCreate, demoGetManaged, demoGetPublic, demoRespond } from "./demoStore";
-import { emptyToNull } from "./format";
-import { decodeTicketStyle, encodeTicketStyle } from "./ticketStyle";
-import { newManageToken, newPublicId } from "./ids";
-import { isLive } from "./mode";
-import { findRegistryEntry, rememberInvitation } from "./registry";
-import { supabase } from "./supabase";
 
 type InvitationRow = {
   public_id: string;
@@ -120,31 +120,40 @@ async function attachLiveAudio(created: CreatedInvitation, draft: InvitationDraf
   }
 }
 
+async function createOnServer(draft: InvitationDraft, publicId: string, manageToken: string): Promise<CreatedInvitation> {
+  try {
+    const created = await serverCreate(draft, publicId, manageToken);
+    rememberInvitation({ publicId, manageToken, mode: "live", createdAt: new Date().toISOString() });
+    return created;
+  } catch (error) {
+    throw new InvitationSaveError(error instanceof Error ? error.message : "The invitation couldn’t be saved.", null);
+  }
+}
+
 export async function createInvitation(
   draft: InvitationDraft,
   existing?: CreatedInvitation | null,
 ): Promise<CreatedInvitation> {
   if (existing) {
-    if (existing.mode === "live") await attachLiveAudio(existing, draft);
+    if (existing.mode === "live") {
+      try {
+        if (isSupabase && supabase) await attachLiveAudio(existing, draft);
+        else await serverAttachAudio(existing.publicId, existing.manageToken, draft);
+      } catch (error) {
+        if (error instanceof InvitationSaveError) throw error;
+        throw new InvitationSaveError(
+          error instanceof Error ? error.message : "The voice message didn’t upload. You can try again.",
+          existing,
+        );
+      }
+    }
     return existing;
   }
 
   const publicId = newPublicId();
   const manageToken = newManageToken();
 
-  if (!isLive || !supabase) {
-    try {
-      await demoCreate(draft, publicId, manageToken);
-    } catch (error) {
-      throw new InvitationSaveError(
-        error instanceof Error ? error.message : "The invitation couldn’t be saved on this browser.",
-        null,
-      );
-    }
-    const created: CreatedInvitation = { publicId, manageToken, mode: "demo" };
-    rememberInvitation({ publicId, manageToken, mode: "demo", createdAt: new Date().toISOString() });
-    return created;
-  }
+  if (!isSupabase || !supabase) return createOnServer(draft, publicId, manageToken);
 
   const { error } = await supabase.rpc("create_invitation", {
     p_public_id: publicId,
@@ -167,51 +176,40 @@ export async function createInvitation(
 }
 
 export async function getPublicInvitation(publicId: string): Promise<Invitation | null> {
-  if (isLive && supabase) {
+  if (isSupabase && supabase) {
     const { data, error } = await supabase.rpc("get_invitation", { p_public_id: publicId });
     if (error) throw asError(error, "The invitation couldn’t be opened.");
     if (isRow(data)) return mapRow(data, "live");
+    return null;
   }
-  return demoGetPublic(publicId);
+  return serverGetPublic(publicId);
 }
 
 export async function respondToInvitation(
   publicId: string,
   status: Exclude<RsvpStatus, "pending">,
 ): Promise<Invitation> {
-  const demo = await demoGetPublic(publicId);
-  if (demo && (!isLive || demo.mode === "demo")) {
-    const saved = await demoRespond(publicId, status);
-    if (!saved) throw new Error("This invitation can’t be found on this browser.");
-    return saved;
+  if (isSupabase && supabase) {
+    const { data, error } = await supabase.rpc("respond_invitation", {
+      p_public_id: publicId,
+      p_status: status,
+    });
+    if (error) throw asError(error, "The reply couldn’t be saved.");
+    if (!isRow(data)) throw new Error("This invitation can’t be found.");
+    return mapRow(data, "live");
   }
-
-  if (!supabase) throw new Error("This invitation can’t be found.");
-  const { data, error } = await supabase.rpc("respond_invitation", {
-    p_public_id: publicId,
-    p_status: status,
-  });
-  if (error) throw asError(error, "The reply couldn’t be saved.");
-  if (!isRow(data)) throw new Error("This invitation can’t be found.");
-  return mapRow(data, "live");
+  return serverRespond(publicId, status);
 }
 
 export async function getManagedInvitation(publicId: string, manageToken: string): Promise<Invitation | null> {
-  const entry = findRegistryEntry(publicId);
-  const mode = entry?.mode;
-
-  if (mode !== "live") {
-    const demo = await demoGetManaged(publicId, manageToken);
-    if (demo) return demo;
-    if (!isLive) return null;
+  if (isSupabase && supabase) {
+    const { data, error } = await supabase.rpc("get_managed_invitation", {
+      p_public_id: publicId,
+      p_manage_token: manageToken,
+    });
+    if (error) throw asError(error, "The sender view couldn’t be opened.");
+    if (!isRow(data)) return null;
+    return mapRow(data, "live");
   }
-
-  if (!supabase) return null;
-  const { data, error } = await supabase.rpc("get_managed_invitation", {
-    p_public_id: publicId,
-    p_manage_token: manageToken,
-  });
-  if (error) throw asError(error, "The sender view couldn’t be opened.");
-  if (!isRow(data)) return null;
-  return mapRow(data, "live");
+  return serverGetManaged(publicId, manageToken);
 }

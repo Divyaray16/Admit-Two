@@ -1,3 +1,4 @@
+// Legacy same-browser store. New invitations use the app server, or Supabase when configured.
 import type { Invitation, InvitationDraft, RsvpStatus, TicketColor, TicketForm } from "../types";
 import { emptyToNull } from "./format";
 import { asTicketColor, asTicketForm } from "./ticketStyle";

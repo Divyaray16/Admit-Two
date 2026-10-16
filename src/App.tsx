@@ -5,6 +5,7 @@ import { InvitationLandingPage } from "./components/InvitationLandingPage";
 import { InvitationManagement } from "./components/InvitationManagement";
 import { InvitationShare } from "./components/InvitationShare";
 import { AppShell } from "./components/SiteChrome";
+import { WalkingLinePage } from "./walk/WalkingLinePage";
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/sent/:publicId" element={<InvitationShare />} />
         <Route path="/manage" element={<InvitationManagement />} />
         <Route path="/manage/:publicId" element={<InvitationManagement />} />
+        <Route path="/walk" element={<WalkingLinePage />} />
         <Route
           path="*"
           element={

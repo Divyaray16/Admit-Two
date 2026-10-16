@@ -3,15 +3,42 @@ import { asTicketColor, asTicketForm } from "./ticketStyle";
 
 const JSON_HEADERS = { accept: "application/json", "content-type": "application/json" };
 
-async function fail(res: Response, fallback: string): Promise<never> {
-  let message = fallback;
+/**
+ * Vite inlines VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY at build time.
+ * A Vercel Preview deployment does not receive variables scoped to Production
+ * only, so this static host has no Supabase client and no /api/invitations server.
+ */
+export const MISSING_SUPABASE_DEPLOYMENT =
+  "This deployment was built without VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY, so the invitation can’t be saved. Add both to the Vercel Preview environment as well as Production, then redeploy. Vite inlines them at build time, and Production-only values are not included in preview builds.";
+
+function deploymentError(fallback: string): string {
+  return import.meta.env.PROD ? MISSING_SUPABASE_DEPLOYMENT : fallback;
+}
+
+function errorFromBody(data: unknown): string | null {
+  if (!data || typeof data !== "object" || !("error" in data)) return null;
+  const message = data.error;
+  return typeof message === "string" && message.trim() ? message : null;
+}
+
+async function readJsonBody(res: Response, fallback: string, missingIsNull = false): Promise<unknown> {
+  const type = (res.headers.get("content-type") ?? "").toLowerCase();
+  const text = await res.text();
+  const trimmed = text.trim();
+  const looksJson = type.includes("json") || trimmed.startsWith("{") || trimmed.startsWith("[");
+
+  if (missingIsNull && res.status === 404 && looksJson) return null;
+  if (!looksJson) throw new Error(deploymentError(fallback));
+
+  let data: unknown;
   try {
-    const data = (await res.json()) as { error?: unknown };
-    if (typeof data.error === "string" && data.error.trim()) message = data.error;
+    data = trimmed ? (JSON.parse(trimmed) as unknown) : null;
   } catch {
-    /* The server answered with something other than JSON. */
+    throw new Error(deploymentError(fallback));
   }
-  throw new Error(message);
+
+  if (!res.ok) throw new Error(errorFromBody(data) ?? deploymentError(fallback));
+  return data;
 }
 
 function asInvitation(value: unknown): Invitation {
@@ -91,9 +118,8 @@ export async function serverCreate(draft: InvitationDraft, publicId: string, man
     headers: JSON_HEADERS,
     body: JSON.stringify(invitationBody(draft, publicId, manageToken, audio)),
   });
-  if (!res.ok) await fail(res, "The invitation couldn’t be saved.");
-  const data = (await res.json()) as { publicId?: unknown };
-  if (data.publicId !== publicId) throw new Error("The invitation couldn’t be saved.");
+  const data = (await readJsonBody(res, "The invitation couldn’t be saved.")) as { publicId?: unknown };
+  if (!data || data.publicId !== publicId) throw new Error(deploymentError("The invitation couldn’t be saved."));
   return { publicId, manageToken, mode: "live" };
 }
 
@@ -105,14 +131,14 @@ export async function serverAttachAudio(publicId: string, manageToken: string, d
     headers: { ...JSON_HEADERS, "x-manage-token": manageToken },
     body: JSON.stringify({ audio }),
   });
-  if (!res.ok) await fail(res, "The voice message didn’t upload. You can try again.");
+  await readJsonBody(res, "The voice message didn’t upload. You can try again.");
 }
 
 export async function serverGetPublic(publicId: string): Promise<Invitation | null> {
   const res = await fetch(`/api/invitations/${encodeURIComponent(publicId)}`, { headers: { accept: "application/json" } });
-  if (res.status === 404) return null;
-  if (!res.ok) await fail(res, "The invitation couldn’t be opened.");
-  return asInvitation(await res.json());
+  const data = await readJsonBody(res, "The invitation couldn’t be opened.", true);
+  if (data == null) return null;
+  return asInvitation(data);
 }
 
 export async function serverRespond(publicId: string, status: Exclude<RsvpStatus, "pending">): Promise<Invitation> {
@@ -121,15 +147,14 @@ export async function serverRespond(publicId: string, status: Exclude<RsvpStatus
     headers: JSON_HEADERS,
     body: JSON.stringify({ status }),
   });
-  if (!res.ok) await fail(res, "The reply couldn’t be saved.");
-  return asInvitation(await res.json());
+  return asInvitation(await readJsonBody(res, "The reply couldn’t be saved."));
 }
 
 export async function serverGetManaged(publicId: string, manageToken: string): Promise<Invitation | null> {
   const res = await fetch(`/api/invitations/${encodeURIComponent(publicId)}/manage`, {
     headers: { accept: "application/json", "x-manage-token": manageToken },
   });
-  if (res.status === 404) return null;
-  if (!res.ok) await fail(res, "The sender view couldn’t be opened.");
-  return asInvitation(await res.json());
+  const data = await readJsonBody(res, "The sender view couldn’t be opened.", true);
+  if (data == null) return null;
+  return asInvitation(data);
 }

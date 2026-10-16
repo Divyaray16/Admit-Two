@@ -32,6 +32,8 @@ VITE_SUPABASE_ANON_KEY=YOUR_ANON_KEY
 
 Use the **anon** key only. Do not put the service role key in the app.
 
+On Vercel, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to **both** the Production and Preview environments, then redeploy. Preview deployments do not receive variables that are scoped to Production only. Vite inlines `VITE_` values when it builds, so a new deployment is required after they change. Without those values, the static site has no `/api/invitations` server and saving fails with that reason. Share links use the address in the browser (`window.location.origin`).
+
 The SQL creates:
 
 - `invitations`, with a hard-to-guess `public_id` and a hashed sender key

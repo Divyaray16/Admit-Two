@@ -153,6 +153,7 @@ export async function createInvitation(
   const publicId = newPublicId();
   const manageToken = newManageToken();
 
+  // Static hosts such as Vercel have no file API. They save only when the Supabase env vars were present at build time.
   if (!isSupabase || !supabase) return createOnServer(draft, publicId, manageToken);
 
   const { error } = await supabase.rpc("create_invitation", {

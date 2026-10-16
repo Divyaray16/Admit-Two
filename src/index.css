@@ -172,14 +172,14 @@ button {
   border-color: #f5f2ed;
 }
 
-.btn-outline {
+button.btn-outline {
   display: flex;
   width: 100%;
   align-items: center;
   justify-content: center;
   border: 1px solid #f5f2ed;
   border-radius: 999px;
-  background: transparent;
+  background-color: transparent;
   padding: 0.75rem 1rem;
   color: #f5f2ed;
   font-family: var(--font-sans);
@@ -188,11 +188,13 @@ button {
   line-height: 1.25rem;
   cursor: pointer;
   appearance: none;
-  transition: background-color 160ms ease, color 160ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 }
 
-.btn-outline:hover {
-  background: #f5f2ed;
+button.btn-outline:hover:not(:disabled),
+button.btn-outline:focus-visible:not(:disabled) {
+  background-color: #f5f2ed;
+  border-color: #f5f2ed;
   color: #141414;
 }
 
